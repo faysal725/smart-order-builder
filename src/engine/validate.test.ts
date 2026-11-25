@@ -26,6 +26,6 @@ describe("validateConfig", () => {
 
   it("returns ALL violations, not just first", () => {
     const codes = run({ croissant: 1, tofu: 1, bacon: 1, hollandaise: 1, hashbrown: 1, mushroom: 1, beans: 1 });
-    expect(codes.length).toBeGreaterThan(1);
+    expect(codes).toEqual(expect.arrayContaining(["GROUP_MAX", "EXCLUDES", "REQUIRES"]));
   });
 });
