@@ -40,6 +40,13 @@ export function validateConfig(
         message: `${group.name}: max is ${max}, got ${total}`,
       });
     }
+    if (group.step !== undefined && total % group.step !== 0) {
+      violations.push({
+        code: "GROUP_STEP",
+        groupId: group.id,
+        message: `${group.name}: total must be a multiple of ${group.step}, got ${total}`,
+      });
+    }
     if (group.maxDistinct !== undefined && distinct > group.maxDistinct) {
       violations.push({
         code: "MAX_DISTINCT",

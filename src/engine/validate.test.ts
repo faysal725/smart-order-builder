@@ -7,7 +7,7 @@ const run = (sel: Record<string, number>) =>
 
 describe("validateConfig", () => {
   it("valid config returns no violations", () => {
-    expect(run({ toast: 1, fried: 1, sausage: 1 })).toEqual([]);
+    expect(run({ toast: 1, fried: 2, sausage: 1 })).toEqual([]);
   });
 
   it("TC-02: croissant + 3 extras blocked (override wins)", () => {
@@ -22,6 +22,15 @@ describe("validateConfig", () => {
 
   it("TC-04: tofu + beef bacon blocked", () => {
     expect(run({ toast: 1, tofu: 1, bacon: 1 })).toContain("EXCLUDES");
+  });
+
+  it("TC-01: scrambled x3 blocked (eggs 2-6 in steps of 2)", () => {
+    const codes = run({ toast: 1, scrambled: 3, sausage: 1 });
+    expect(codes).toContain("GROUP_STEP");
+  });
+
+  it("eggs total 3 breaks step only", () => {
+    expect(run({ toast: 1, scrambled: 1, fried: 2, sausage: 1 })).toEqual(["GROUP_STEP"]);
   });
 
   it("returns ALL violations, not just first", () => {

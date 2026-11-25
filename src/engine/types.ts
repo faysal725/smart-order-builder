@@ -17,6 +17,7 @@ export interface Group {
   name: string;
   min: number; // total units across group
   max: number;
+  step?: number; // total must be a multiple of this
   maxDistinct?: number; // how many different options allowed
   maxPerOption?: number; // units of one single option
   options: Option[];
@@ -41,6 +42,7 @@ export type Selection = Record<OptionId, number>; // optionId -> count
 export type ViolationCode =
   | "GROUP_MIN"
   | "GROUP_MAX"
+  | "GROUP_STEP"
   | "MAX_DISTINCT"
   | "MAX_PER_OPTION"
   | "REQUIRES"

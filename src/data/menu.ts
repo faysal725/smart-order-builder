@@ -20,8 +20,9 @@ export const menu: Menu = {
     {
       id: "eggs",
       name: "Eggs",
-      min: 0,
-      max: 4, // VERIFY (seed orders use 4 egg units)
+      min: 2,
+      max: 6, // VERIFY (seed orders use 4 egg units)
+      step: 2,
       maxDistinct: 2, // VERIFY
       maxPerOption: 2, // VERIFY
       options: [
