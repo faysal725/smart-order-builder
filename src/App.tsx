@@ -11,6 +11,7 @@ import { Configurator } from "./ui/Configurator";
 import { PricePanel } from "./ui/PricePanel";
 import { bdt } from "./ui/format";
 import { usePricePreview } from "./ui/usePricePreview";
+import { ChatPanel } from "./ui/ChatPanel";
 
 const MESSAGES: Record<string, string> = {
   RESERVE_FAILED: "Could not reserve stock. Nothing was held. Your selection is kept, try again.",
@@ -58,7 +59,7 @@ export default function App() {
 
   useEffect(() => {
     refresh().catch((e) => setError(e.message));
-    const poll = setInterval(() => refresh().catch(() => {}), 10_000);
+    const poll = setInterval(() => refresh().catch(() => { }), 10_000);
     return () => clearInterval(poll);
   }, [refresh]);
 
@@ -75,7 +76,7 @@ export default function App() {
   // An item just ran out: ask the server so stock shows as released
   const lapsedCount = lapsed.length;
   useEffect(() => {
-    if (lapsedCount > 0) refresh().catch(() => {});
+    if (lapsedCount > 0) refresh().catch(() => { });
   }, [lapsedCount, refresh]);
 
   const cartLines: CartLine[] = useMemo(() => reservations.map((r) => r.line), [reservations]);
@@ -132,7 +133,7 @@ export default function App() {
   async function remove(r: ReservationView) {
     lastRes.current = lastRes.current.filter((x) => x.id !== r.id);
     setExpired((prev) => prev.filter((x) => x.id !== r.id));
-    await release(r.id).catch(() => {}); // already released if expired. Harmless.
+    await release(r.id).catch(() => { }); // already released if expired. Harmless.
     await refresh();
   }
 
@@ -176,61 +177,64 @@ export default function App() {
   const shownExpired = [...expired, ...lapsed.filter((l) => !expired.some((x) => x.id === l.id))];
 
   return (
-    <main>
-      <h1>Smart Order Builder</h1>
-      <Configurator
-        menu={menu}
-        selection={clean}
-        qty={qty}
-        cartLines={cartLines}
-        onSelection={setSelection}
-        onQty={setQty}
-      />
+    <>
+      <ChatPanel menu={data.menu} />
+      <main>
+        <h1>Smart Order Builder</h1>
+        <Configurator
+          menu={menu}
+          selection={clean}
+          qty={qty}
+          cartLines={cartLines}
+          onSelection={setSelection}
+          onQty={setQty}
+        />
 
-      <label>
-        Coupon{" "}
-        <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="MORNING15" />
-      </label>
-      <h3>This configuration</h3>
-      <PricePanel {...draftPrice} />
+        <label>
+          Coupon{" "}
+          <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="MORNING15" />
+        </label>
+        <h3>This configuration</h3>
+        <PricePanel {...draftPrice} />
 
-      <button
-        type="button"
-        onClick={addToCart}
-        disabled={pending || draftCart.length === 0 || violations.length > 0}
-      >
-        {pending ? "Adding..." : "Add to cart"}
-      </button>
-      {error && <p role="alert">{error}</p>}
-
-      <Cart active={active} expired={shownExpired} now={now} names={names} onRemove={remove} />
-
-      <h3>Cart total</h3>
-      <PricePanel {...cartPrice} />
-      <label>
-        Payment{" "}
-        <select value={payment} onChange={(e) => setPayment(e.target.value as PaymentMethod)}>
-          <option value="card">card</option>
-          <option value="bkash">bkash</option>
-          <option value="cash">cash</option>
-        </select>
-      </label>{" "}
-      <button type="button" onClick={pay} disabled={paying || active.length === 0}>
-        {paying ? "Paying..." : "Pay"}
-      </button>
-
-      {lastOrder && (
-        <p>
-          Order {lastOrder.id} placed. Payable {bdt(lastOrder.pricing?.payable ?? 0)}. Coupon:{" "}
-          {lastOrder.couponCode ?? "none"} / applied: {lastOrder.pricing?.applied ?? "none"}
-        </p>
-      )}
-
-      <p>
-        <button type="button" onClick={downloadOrders}>
-          Download orders.json
+        <button
+          type="button"
+          onClick={addToCart}
+          disabled={pending || draftCart.length === 0 || violations.length > 0}
+        >
+          {pending ? "Adding..." : "Add to cart"}
         </button>
-      </p>
-    </main>
+        {error && <p role="alert">{error}</p>}
+
+        <Cart active={active} expired={shownExpired} now={now} names={names} onRemove={remove} />
+
+        <h3>Cart total</h3>
+        <PricePanel {...cartPrice} />
+        <label>
+          Payment{" "}
+          <select value={payment} onChange={(e) => setPayment(e.target.value as PaymentMethod)}>
+            <option value="card">card</option>
+            <option value="bkash">bkash</option>
+            <option value="cash">cash</option>
+          </select>
+        </label>{" "}
+        <button type="button" onClick={pay} disabled={paying || active.length === 0}>
+          {paying ? "Paying..." : "Pay"}
+        </button>
+
+        {lastOrder && (
+          <p>
+            Order {lastOrder.id} placed. Payable {bdt(lastOrder.pricing?.payable ?? 0)}. Coupon:{" "}
+            {lastOrder.couponCode ?? "none"} / applied: {lastOrder.pricing?.applied ?? "none"}
+          </p>
+        )}
+
+        <p>
+          <button type="button" onClick={downloadOrders}>
+            Download orders.json
+          </button>
+        </p>
+      </main>
+    </>
   );
 }
