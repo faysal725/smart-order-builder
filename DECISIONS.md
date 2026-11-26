@@ -23,24 +23,23 @@ TC-06 by hand (poisha):
 - Total: 150950 + 7548 = 158498 (1,584.98 BDT)
 - Payable, rounded half-up to whole BDT: 1,585
 
-### C2 - Bot questions and the function behind each
+### C2 - Gemini bot: supported questions and functions
 
-Gemini only chooses the function and fills inputs. My code computes every number from the orders JSON.
-Revenue always means the sum of `pricing.payable` per order.
+Gemini only picks a function and its inputs, then phrases the result.
+My code computes every number from the orders JSON. Raw orders are never sent to the model.
+Revenue = sum of `pricing.payable` (integer poisha, shown also as BDT).
 
 | Question | Function | Inputs | Output |
 |---|---|---|---|
-| How many orders? | getOrderCount | none | number |
-| Total revenue? | getTotalRevenue | none | poisha |
-| Best-selling option (by units)? | getTopOption | none | { optionId, units } |
-| Revenue by payment method? | getRevenueByPayment | none | { card, bkash, cash } in poisha |
-| Average order value? | getAverageOrderValue | none | poisha, rounded half-up |
-| How many orders actually got the coupon? | getCouponAppliedCount | none | number (orders with pricing.applied = "C2") |
-| Orders on a given date? | getOrdersOnDate | date (YYYY-MM-DD) | number |
-| Anything else (e.g. best customer) | none | - | bot says it cannot know from this data |
+| How many orders? | getOrderCount | optional from, to (YYYY-MM-DD) | { count } |
+| Total revenue? | getTotalRevenue | optional from, to | { revenue: { poisha, bdt } } |
+| Revenue by payment method? | getRevenueByPayment | optional from, to | { card, bkash, cash } each { poisha, bdt } |
+| Best-selling option (by units)? | getTopOptions | optional limit, from, to | { top: [{ optionId, name, units }] } |
+| Average order value? | getAverageOrderValue | optional from, to | { average: { poisha, bdt } } |
+| How many orders got the coupon? | getCouponAppliedCount | optional from, to | { count } (only orders where C2 won) |
+| Orders on a given date? | getOrdersOnDate | date (YYYY-MM-DD) | { date, count } |
 
-Units = option count x line qty, summed over all lines.
-Date uses the first 10 characters of `createdAt`, which is already Dhaka time. No timezone conversion.
+Not supported (bot must say it cannot know): customer names, anything not in the order data.
 
 ### C3
 
@@ -48,11 +47,15 @@ TODO: copy the C3 question from the brief and answer it here.
 
 ## Decision points
 
-### D1 - Two tabs, last egg taken by the other tab
+### D1 - Two tabs, last egg
 
-Server is the source of truth. If tab A takes the last eggs, tab B's reserve call returns 409 with
-"Short: N egg". Tab B keeps the user's draft untouched, so nothing typed is lost. It then reloads
-available stock, and the affected options show as blocked with the reason.
+**Question:** Tab A is adding an item while tab B takes the last egg. What does tab A see on save, and does the user lose what they typed?
+
+**My choice:** The server decides. Tab A's reserve call gets 409 with "Short: 1 egg". Tab A keeps its draft. Nothing is lost.
+
+**Why:** Stock lives only on the server, so a stale tab cannot overwrite or oversell. Failed reserve writes nothing (all-or-nothing), so no phantom hold. The draft state is only cleared after a success.
+
+**Trade-off:** Tab A shows old stock numbers until its next refresh (it polls every 10 seconds), so the user may click a button that then fails with a clear message.
 
 ### D2 - When is a price locked
 
@@ -65,10 +68,16 @@ available stock, and the affected options show as blocked with the reason.
 **Trade-off:** A user can see one price while configuring and pay a different one if the coupon expires in between. The cart shows the breakdown again before Pay.
 
 ### D3 - Reservation expires while editing
-**My choice:** The item turns read-only and struck through, with the text "EXPIRED, stock released".
-Remove still works. Unsaved edits stay on screen but PUT returns 410, so they are never silently saved.
-**Why:** The server already gave the stock back, so saving would claim stock the user no longer holds.
-**Trade-off:** The user must re-add the item, and stock may be gone by then.
+
+**Question:** What happens to unsaved changes, and what does the screen say?
+
+**My choice:** An expired item turns read-only: struck through with "EXPIRED, stock released". Remove still works. The server refuses edits on an expired reservation (410).
+
+**Why:** The server already gave the stock back, so saving the edit would claim stock the user no longer holds.
+
+**Trade-off:** The user has to add the item again, and the stock may be gone by then.
+
+**Status:** The edit-in-place screen is NOT built yet. Expiry and read-only are built. Server edit (PUT) exists and is tested at engine level (TC-09 to TC-11).
 
 ### D4 - Who creates order id and timestamp, and double-click on Pay
 
@@ -82,38 +91,50 @@ Remove still works. Unsaved edits stay on screen but PUT returns 410, so they ar
 
 ### D5 - "Who is our best customer?"
 
-Orders hold no customer data, so no tool can answer it. The bot is given no customer tool, and its
-system instruction says to refuse questions its tools cannot answer. Reply:
-"Orders do not store customer information, so I can't tell you that."
+**Question:** Orders store no customer. What does the bot reply and how do I stop it inventing a name?
+
+**My choice:** The bot says it cannot know this from the data.
+
+**How:** (1) No customer tool exists, so the model has nothing to call. (2) The system prompt says orders hold no customer data and forbids guessing. (3) Raw orders are never sent to the model, so there is no data to invent from.
+
+**Limit:** Point 2 depends on the model following the prompt. Unit tests cannot prove it. I check TC-20 by asking it by hand.
+
+
 
 ### D6 - Stored order JSON shape
 
-```json
+**Question:** Which fields, which money unit, how is a coupon that was entered but not applied recorded?
+
+**My choice:**
 {
-  "id": "ORD-1009",
-  "createdAt": "2026-11-26T10:15:00+06:00",
-  "paymentMethod": "card",
-  "couponCode": "MORNING15",
-  "lines": [{ "qty": 1, "options": { "toast": 1, "fried": 2, "sausage": 1 } }],
+  "id": "ORD-1007",
+  "createdAt": "2026-11-26T10:05:00+06:00",
+  "paymentMethod": "card | bkash | cash",
+  "couponCode": "MORNING15 or null",
+  "lines": [{ "qty": 1, "options": { "toast": 1 } }],
   "pricing": {
-    "subtotal": 0, "c1": 0, "c2": 0, "applied": "C2",
-    "discount": 0, "discountedSubtotal": 0, "vat": 0, "total": 0, "payable": 0
+    "lines": [...], "subtotal": 0, "c1": 0, "c2": 0,
+    "applied": "C1 | C2 | null", "discount": 0,
+    "discountedSubtotal": 0, "vat": 0, "total": 0, "payable": 0
   }
 }
-```
+Downloaded file: { "schemaVersion": 1, "currency": "BDT", "orders": [...] }
 
-Money unit: integer poisha. `couponCode` is what the user typed. `pricing.applied` is what was
-used ("C1", "C2" or null). So "entered but not applied" = couponCode set and applied is not "C2".
-Why: seed orders have no price, and I price them with my engine at each `createdAt`.
-Stored prices stay stable even if promo rules change later.
+**Money unit:** Integer poisha everywhere. 100 poisha = 1 BDT. No floats are stored.
 
-## Other assumptions
+**Coupon entered but not applied:** `couponCode` keeps what the user typed. `pricing.applied` says which discount won. So MORNING15 typed after 11:00 gives `couponCode: "MORNING15"` and `applied: "C1"` or `null`. `pricing.c2` is 0.
 
-- Sauce group has no max in Appendix A. I set max 99 so `maxDistinct 2` is the real limit.
-- Combo (eggs >= 4 and protein >= 2) counts option units in the Eggs and Protein groups.
-  An omelette is one unit. Counting egg ingredients would differ.
-- Tie between C1 and C2: C1 wins, as the brief says.
-- Seed orders do not consume stock. They are past orders from 20 and 21 Nov.
-- Reservation lives 5 minutes. The mock server clock runs 90 seconds ahead.
-  The client learns the offset from `serverTime` in every response.
-- Group ids `eggs`, `protein` and `extras` are constants at the top of `pricing.ts`.
+**Why:** One record answers both "who typed a coupon" and "who actually got it". Prices are stored so later rule changes cannot change old totals.
+
+
+
+## Other decisions
+
+- **Seed orders do not use stock.** They are past orders (20 and 21 Nov). Stock starts from Appendix A numbers.
+- **Seed pricing:** priced with my own engine at each order's `createdAt`, so MORNING15 on 10:05 counts and on 12:40 would not.
+- **Combo (P1) counts option units** in the Eggs and Protein groups (Omelette x1 = 1 unit), not egg ingredients. Reason: the brief says "eggs >= 4" about options. TC-10 gives 643.50 with this reading.
+- **Rounding:** every percentage step is half-up on integer poisha using integer math. Only the final payable rounds to whole BDT.
+- **Tie between C1 and C2:** C1 wins, per the brief.
+- **Sauce max:** Appendix A gives no sauce max, so the limit is only maxDistinct 2 and maxPerOption 1.
+- **Plus button not blocked at group max.** The rule message shows instead, and Add is disabled while rules fail. The server validates again.
+- **Date for stats:** I slice `createdAt` (already +06:00) and never convert through UTC.
