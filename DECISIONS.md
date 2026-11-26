@@ -56,11 +56,13 @@ available stock, and the affected options show as blocked with the reason.
 
 ### D2 - When is a price locked
 
-At checkout, not at Add to cart. TC-06 and TC-07 use the same cart and give different results
-(10:59:59 vs 11:00:00), so the price cannot be frozen earlier. The live preview uses server time.
-Pay re-prices with server time. If the coupon stopped applying since the item was added,
-the UI shows a note before Pay.
-TODO: add one line on how your UI shows the TC-07 case.
+**Question:** When is a price locked: at Add to cart, at checkout, or never?
+
+**My choice:** Locked at checkout. The /price preview is only a preview.
+
+**Why:** TC-06 and TC-07 use the same cart. At 10:59:59 the coupon works (payable 1,585). At 11:00:00 it is rejected (payable 1,637). So the final price must depend on server time at the moment of payment. Locking at Add to cart would break TC-07.
+
+**Trade-off:** A user can see one price while configuring and pay a different one if the coupon expires in between. The cart shows the breakdown again before Pay.
 
 ### D3 - Reservation expires while the user edits
 
@@ -70,12 +72,13 @@ the item, or add the draft again as a new item, which tries a fresh reserve and 
 
 ### D4 - Who creates order id and timestamp, and double-click on Pay
 
-Server creates both. The id is the next ORD number. The timestamp is server time in Dhaka ISO
-(+06:00), the same shape as the seed file. The browser clock is wrong by 90 seconds by design.
-Double-click: the client makes one idempotency key per Pay attempt and disables the button while
-the call is pending. The server stores key to order id, so the same key returns the same order.
-Result: exactly one order, and sold stock is not released again.
-Add to cart works the same way. One key per draft, reused on every click, replaced only after success.
+**Question:** Who creates the order id and timestamp, and how is a double-click on Pay stopped?
+
+**My choice:** The server creates both. The browser sends one idempotency key per Pay attempt.
+
+**Why:** The browser clock can be wrong (the mock server clock is 90 seconds ahead on purpose), so the browser cannot be trusted for time or ids. The server remembers key -> order id. A second request with the same key returns the same order, never a new one. The Pay button is also disabled while the request is pending.
+
+**Same idea for Add to cart:** One key is made when a draft starts and reused for every click on that draft. A new key is made only after a success. A new key per click would turn a triple click into three items. TC-13 needs exactly one.
 
 ### D5 - "Who is our best customer?"
 
