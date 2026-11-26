@@ -1,5 +1,5 @@
 import type {
-  CartLine, Menu, PaymentMethod, PriceBreakdown, Selection, Violation,
+  CartLine, Menu, Order, PaymentMethod, PriceBreakdown, Selection, Violation,
 } from "./engine/types";
 
 // Server clock offset. Learned from `serverTime` in EVERY response.
@@ -74,8 +74,8 @@ export const updateReservation = (id: string, selection: Selection, qty: number)
 export const release = (id: string) => call<{ released: boolean }>("DELETE", `/api/reserve/${id}`);
 
 export const checkout = (key: string, paymentMethod: PaymentMethod, couponCode: string | null) =>
-  call<{ order: unknown }>("POST", "/api/checkout", { key, paymentMethod, couponCode });
+  call<{ order: Order }>("POST", "/api/checkout", { key, paymentMethod, couponCode });
 
-export const fetchOrders = () => call<{ orders: unknown[] }>("GET", "/api/orders");
+export const fetchOrders = () => call<{ orders: Order[] }>("GET", "/api/orders");
 
 export type { Violation };

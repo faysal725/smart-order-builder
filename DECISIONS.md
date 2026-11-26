@@ -64,11 +64,11 @@ available stock, and the affected options show as blocked with the reason.
 
 **Trade-off:** A user can see one price while configuring and pay a different one if the coupon expires in between. The cart shows the breakdown again before Pay.
 
-### D3 - Reservation expires while the user edits
-
-Unsaved changes stay on screen. A banner says the reservation expired at HH:MM, stock was released,
-and the item is read-only. Save is disabled (the server returns 410 on edit). The user can remove
-the item, or add the draft again as a new item, which tries a fresh reserve and may fail on stock.
+### D3 - Reservation expires while editing
+**My choice:** The item turns read-only and struck through, with the text "EXPIRED, stock released".
+Remove still works. Unsaved edits stay on screen but PUT returns 410, so they are never silently saved.
+**Why:** The server already gave the stock back, so saving would claim stock the user no longer holds.
+**Trade-off:** The user must re-add the item, and stock may be gone by then.
 
 ### D4 - Who creates order id and timestamp, and double-click on Pay
 
