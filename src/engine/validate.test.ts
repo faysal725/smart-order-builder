@@ -37,4 +37,10 @@ describe("validateConfig", () => {
     const codes = run({ croissant: 1, tofu: 1, bacon: 1, hollandaise: 1, hashbrown: 1, mushroom: 1, beans: 1 });
     expect(codes).toEqual(expect.arrayContaining(["GROUP_MAX", "EXCLUDES", "REQUIRES"]));
   });
+  
+  it("TC-04: tofu+bacon AND chili+hollandaise list both", () => {
+    const sel = { toast: 1, scrambled: 2, tofu: 1, bacon: 1, chili: 1, hollandaise: 1 };
+    const codes = run(sel).filter((c) => c === "EXCLUDES");
+    expect(codes.length).toBe(2);
+  });
 });

@@ -45,4 +45,10 @@ describe("priceCart", () => {
   it("unknown option throws", () => {
     expect(() => priceCart([{ qty: 1, options: { nope: 1 } }], menu, none, early)).toThrow();
   });
+
+  it("TC-10: edited B costs 643.50", () => {
+    const sel = { ...B.options, omelette: 1, fried: 3 };
+    const r = priceCart([{ qty: 1, options: sel }], menu, none, early);
+    expect(r.lines[0].unitPrice).toBe(64350);
+  });
 });
