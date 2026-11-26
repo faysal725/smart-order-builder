@@ -33,7 +33,7 @@ export interface Menu {
   basePrice: Poisha;
   groups: Group[];
   rules: Rule[];
-  stock: Record<IngredientId, number>; // starting stock
+  stock: Record<IngredientId, number>; // starting stock. Missing ingredient = unlimited
 }
 
 // ---------- Config + validation ----------
@@ -68,9 +68,9 @@ export interface Order {
   id: string;
   createdAt: string; // ISO with +06:00
   paymentMethod: PaymentMethod;
-  couponCode: string | null;
+  couponCode: string | null; // what the user ENTERED
   lines: CartLine[];
-  // prices added in Part E when you SAVE orders. Seed has none.
+  pricing?: PriceBreakdown; // seed has none. Server adds it (D6)
 }
 
 export interface SeedFile {
@@ -80,29 +80,29 @@ export interface SeedFile {
   orders: Order[];
 }
 
-// ---------- Pricing result ----------
+// ---------- Pricing ----------
 export interface Promos {
   couponCode: string | null;
 }
 
 export interface LinePrice {
   unitSubtotal: Poisha; // step 1
-  extrasDeal: Poisha;   // step 2, amount off per unit
-  combo: Poisha;        // step 3, amount off per unit
+  extrasDeal: Poisha; // step 2, amount off per unit
+  combo: Poisha; // step 3, amount off per unit
   unitPrice: Poisha;
   qty: number;
-  lineTotal: Poisha;    // step 4
+  lineTotal: Poisha; // step 4
 }
 
 export interface PriceBreakdown {
   lines: LinePrice[];
   subtotal: Poisha;
-  c1: Poisha;                   // discount C1 would give
-  c2: Poisha;                   // discount C2 would give (0 if invalid)
-  applied: "C1" | "C2" | null;
+  c1: Poisha; // discount C1 would give
+  c2: Poisha; // discount C2 would give (0 if invalid)
+  applied: "C1" | "C2" | null; // which one won. Null = none
   discount: Poisha;
   discountedSubtotal: Poisha;
   vat: Poisha;
-  total: Poisha;                // discounted + vat, in poisha
-  payable: Poisha;              // rounded to whole BDT
+  total: Poisha; // discounted + vat, in poisha
+  payable: Poisha; // rounded to whole BDT, still in poisha
 }
