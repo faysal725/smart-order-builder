@@ -81,18 +81,28 @@ export interface SeedFile {
 }
 
 // ---------- Pricing result ----------
+export interface Promos {
+  couponCode: string | null;
+}
+
 export interface LinePrice {
-  unitPrice: Poisha; // one configuration, after step 1-3
-  lineTotal: Poisha; // unitPrice * qty
+  unitSubtotal: Poisha; // step 1
+  extrasDeal: Poisha;   // step 2, amount off per unit
+  combo: Poisha;        // step 3, amount off per unit
+  unitPrice: Poisha;
+  qty: number;
+  lineTotal: Poisha;    // step 4
 }
 
 export interface PriceBreakdown {
   lines: LinePrice[];
   subtotal: Poisha;
-  discount: Poisha; // the ONE cart discount that applied
-  discountLabel: string | null; // "C1", "C2" or coupon code
+  c1: Poisha;                   // discount C1 would give
+  c2: Poisha;                   // discount C2 would give (0 if invalid)
+  applied: "C1" | "C2" | null;
+  discount: Poisha;
   discountedSubtotal: Poisha;
   vat: Poisha;
-  total: Poisha; // discountedSubtotal + vat
-  payable: Poisha; // rounded per brief
+  total: Poisha;                // discounted + vat, in poisha
+  payable: Poisha;              // rounded to whole BDT
 }

@@ -27,8 +27,8 @@ export const menu: Menu = {
       maxPerOption: 2, // VERIFY
       options: [
         { id: "fried", name: "Fried Egg", price: 3000, ingredients: { egg: 1 } }, // VERIFY
-        { id: "scrambled", name: "Scrambled Egg", price: 3500, ingredients: { egg: 2 } }, // VERIFY
-        { id: "omelette", name: "Omelette", price: 7000, ingredients: { egg: 2 } }, // VERIFY
+        { id: "scrambled", name: "Scrambled Egg", price: 4000, ingredients: { egg: 2 } },
+        { id: "omelette", name: "Omelette", price: 8000, ingredients: { egg: 2 } },
       ],
     },
     {
